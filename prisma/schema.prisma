@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Branch {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  address     String   @default("")
+  phone       String   @default("")
+  openingHour Int      @default(10)
+  closingHour Int      @default(19)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  dailyCapacities DailyCapacity[]
+  appointments    Appointment[]
+}
+
+model DailyCapacity {
+  id         String   @id @default(cuid())
+  branchId   String
+  date       String
+  maxPerHour Int      @default(3)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, date])
+  @@index([branchId, date])
+}
+
+model Service {
+  id        String   @id @default(cuid())
+  name      String
+  category  String
+  price     Float
+  duration  Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  appointments Appointment[]
+}
+
+model Appointment {
+  id           String   @id @default(cuid())
+  branchId     String
+  date         String
+  hour         Int
+  customerName String?
+  phoneNumber  String
+  serviceId    String
+  staffName    String?
+  notes        String?
+  status       String   @default("confirmed")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  branch  Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@index([branchId, date])
+  @@index([branchId, date, hour])
+  @@index([phoneNumber])
+  @@index([status])
+}
