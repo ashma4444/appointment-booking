@@ -47,7 +47,7 @@ export default async function DashboardPage({
 
   // Build hour slots
   const hourSlots = [];
-  for (let h = branch.openingHour; h < branch.closingHour; h++) {
+  for (let h = branch.openingHour; h <= branch.closingHour; h++) {
     const slotAppts = nonCancelled.filter((a) => a.hour === h);
     hourSlots.push({ hour: h, count: slotAppts.length });
   }

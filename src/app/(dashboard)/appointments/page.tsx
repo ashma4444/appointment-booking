@@ -48,7 +48,7 @@ export default async function AppointmentsPage({
 
   // Group by hour
   const hourSlots: HourSlot[] = [];
-  for (let h = branch.openingHour; h < branch.closingHour; h++) {
+  for (let h = branch.openingHour; h <= branch.closingHour; h++) {
     const slotAppointments = appointments.filter((a) => a.hour === h);
     const nonCancelledCount = slotAppointments.filter((a) => a.status !== "cancelled").length;
     hourSlots.push({

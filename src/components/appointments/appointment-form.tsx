@@ -83,7 +83,7 @@ export function AppointmentForm({
 
   const hours: number[] = [];
   if (branch) {
-    for (let h = branch.openingHour; h < branch.closingHour; h++) {
+    for (let h = branch.openingHour; h <= branch.closingHour; h++) {
       hours.push(h);
     }
   }

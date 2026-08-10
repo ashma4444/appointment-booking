@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { setDailyCapacity } from "@/actions/capacity-actions";
+import { formatHour } from "@/lib/constants";
 import { toast } from "sonner";
 import type { Branch } from "@/generated/prisma/client";
 
@@ -135,7 +136,7 @@ export function CapacityManager({ branches }: { branches: Branch[] }) {
                 <p className="text-xs text-muted-foreground">{branch.address}</p>
               </div>
               <span className="text-xs text-muted-foreground font-mono">
-                {branch.openingHour}:00 - {branch.closingHour}:00
+                {formatHour(branch.openingHour)} - {formatHour(branch.closingHour)}
               </span>
             </div>
           ))}
