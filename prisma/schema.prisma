@@ -12,7 +12,7 @@ model Branch {
   name        String   @unique
   address     String   @default("")
   phone       String   @default("")
-  openingHour Int      @default(10)
+  openingHour Int      @default(7)
   closingHour Int      @default(19)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())

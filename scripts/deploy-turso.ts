@@ -89,11 +89,11 @@ async function main() {
   // Seed branches
   await client.execute({
     sql: `INSERT OR IGNORE INTO "Branch" ("id", "name", "address", "phone", "openingHour", "closingHour", "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: ["ason", "Ason", "Ason, Kathmandu", "+977-01-4234567", 10, 19, true, now, now],
+    args: ["ason", "Ason", "Ason, Kathmandu", "+977-01-4234567", 7, 19, true, now, now],
   });
   await client.execute({
     sql: `INSERT OR IGNORE INTO "Branch" ("id", "name", "address", "phone", "openingHour", "closingHour", "isActive", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: ["khusibu", "Khusibu", "Khusibu, Kathmandu", "+977-01-4345678", 10, 19, true, now, now],
+    args: ["khusibu", "Khusibu", "Khusibu, Kathmandu", "+977-01-4345678", 7, 19, true, now, now],
   });
   console.log("  ✓ Branches seeded");
 

@@ -12,7 +12,7 @@ async function main() {
       name: "Ason",
       address: "Ason, Kathmandu",
       phone: "+977-01-4234567",
-      openingHour: 10,
+      openingHour: 7,
       closingHour: 19,
     },
   });
@@ -24,7 +24,7 @@ async function main() {
       name: "Khusibu",
       address: "Khusibu, Kathmandu",
       phone: "+977-01-4345678",
-      openingHour: 10,
+      openingHour: 7,
       closingHour: 19,
     },
   });
