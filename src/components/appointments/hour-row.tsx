@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,14 +8,18 @@ import { AppointmentCard } from "./appointment-card";
 import { formatHour } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { HourSlot } from "@/types";
+import type { Branch } from "@/generated/prisma/client";
 
 interface HourRowProps {
   slot: HourSlot;
+  branches: Branch[];
+  selectedBranch: string;
   onAdd: () => void;
   onEdit: (id: string) => void;
+  onRebook: (id: string) => void;
 }
 
-export function HourRow({ slot, onAdd, onEdit }: HourRowProps) {
+export const HourRow = memo(function HourRow({ slot, branches, selectedBranch, onAdd, onEdit, onRebook }: HourRowProps) {
   const { hour, appointments, count, maxPerHour } = slot;
   const isFull = count >= maxPerHour;
   const isAlmostFull = count >= maxPerHour * 0.7 && !isFull;
@@ -64,7 +69,7 @@ export function HourRow({ slot, onAdd, onEdit }: HourRowProps) {
       {nonCancelled.length > 0 && (
         <div className="space-y-1.5">
           {nonCancelled.map((apt) => (
-            <AppointmentCard key={apt.id} appointment={apt} onEdit={() => onEdit(apt.id)} />
+            <AppointmentCard key={apt.id} appointment={apt} branches={branches} selectedBranch={selectedBranch} onEdit={() => onEdit(apt.id)} onRebook={() => onRebook(apt.id)} />
           ))}
         </div>
       )}
@@ -72,7 +77,7 @@ export function HourRow({ slot, onAdd, onEdit }: HourRowProps) {
       {cancelled.length > 0 && (
         <div className="mt-2 space-y-1">
           {cancelled.map((apt) => (
-            <AppointmentCard key={apt.id} appointment={apt} onEdit={() => onEdit(apt.id)} />
+            <AppointmentCard key={apt.id} appointment={apt} branches={branches} selectedBranch={selectedBranch} onEdit={() => onEdit(apt.id)} onRebook={() => onRebook(apt.id)} />
           ))}
         </div>
       )}
@@ -82,4 +87,4 @@ export function HourRow({ slot, onAdd, onEdit }: HourRowProps) {
       )}
     </div>
   );
-}
+});

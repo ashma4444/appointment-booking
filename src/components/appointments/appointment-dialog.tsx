@@ -19,6 +19,7 @@ interface AppointmentDialogProps {
   selectedDate: string;
   defaultHour: number | null;
   editAppointment: AppointmentWithService | null;
+  rebookFrom: AppointmentWithService | null;
 }
 
 export function AppointmentDialog({
@@ -30,14 +31,15 @@ export function AppointmentDialog({
   selectedDate,
   defaultHour,
   editAppointment,
+  rebookFrom,
 }: AppointmentDialogProps) {
+  const title = editAppointment ? "Edit Appointment" : rebookFrom ? "Book Again" : "New Appointment";
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl overflow-y-auto">
         <SheetHeader className="pb-4">
-          <SheetTitle>
-            {editAppointment ? "Edit Appointment" : "New Appointment"}
-          </SheetTitle>
+          <SheetTitle>{title}</SheetTitle>
         </SheetHeader>
         <AppointmentForm
           services={services}
@@ -46,6 +48,7 @@ export function AppointmentDialog({
           selectedDate={selectedDate}
           defaultHour={defaultHour}
           editAppointment={editAppointment}
+          rebookFrom={rebookFrom}
           onSuccess={() => onOpenChange(false)}
         />
       </SheetContent>

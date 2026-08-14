@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
-import { DEFAULT_MAX_PER_HOUR, formatHour } from "@/lib/constants";
+import { DEFAULT_MAX_PER_HOUR, formatHour, formatTime, getStatusColor, getStatusLabel } from "@/lib/constants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, CheckCircle2, XCircle, Clock } from "lucide-react";
@@ -28,28 +28,41 @@ export default async function DashboardPage({
     );
   }
 
-  const capacity = await prisma.dailyCapacity.findUnique({
-    where: { branchId_date: { branchId: selectedBranch, date: selectedDate } },
-  });
+  const [capacity, appointments] = await Promise.all([
+    prisma.dailyCapacity.findUnique({
+      where: { branchId_date: { branchId: selectedBranch, date: selectedDate } },
+    }),
+    prisma.appointment.findMany({
+      where: { branchId: selectedBranch, date: selectedDate },
+      include: { service: true },
+      orderBy: [{ hour: "asc" }, { minute: "asc" }, { createdAt: "asc" }],
+    }),
+  ]);
   const maxPerHour = capacity?.maxPerHour ?? DEFAULT_MAX_PER_HOUR;
 
-  const appointments = await prisma.appointment.findMany({
-    where: { branchId: selectedBranch, date: selectedDate },
-    include: { service: true },
-    orderBy: [{ hour: "asc" }, { createdAt: "asc" }],
-  });
+  // Single-pass status counting + grouping by hour
+  const statusCounts: Record<string, number> = {};
+  const byHour: Record<number, typeof appointments> = {};
+  for (const apt of appointments) {
+    statusCounts[apt.status] = (statusCounts[apt.status] ?? 0) + 1;
+    if (apt.status !== "cancelled") {
+      (byHour[apt.hour] ??= []).push(apt);
+    }
+  }
+  const nonCancelledCount = appointments.length - (statusCounts["cancelled"] ?? 0);
+  const confirmed = statusCounts["confirmed"] ?? 0;
+  const completed = statusCounts["completed"] ?? 0;
+  const noShow = statusCounts["no_show"] ?? 0;
+  const cancelled = statusCounts["cancelled"] ?? 0;
 
-  const nonCancelled = appointments.filter((a) => a.status !== "cancelled");
-  const confirmed = appointments.filter((a) => a.status === "confirmed").length;
-  const completed = appointments.filter((a) => a.status === "completed").length;
-  const noShow = appointments.filter((a) => a.status === "no_show").length;
-  const cancelled = appointments.filter((a) => a.status === "cancelled").length;
-
-  // Build hour slots
   const hourSlots = [];
   for (let h = branch.openingHour; h <= branch.closingHour; h++) {
-    const slotAppts = nonCancelled.filter((a) => a.hour === h);
-    hourSlots.push({ hour: h, count: slotAppts.length });
+    const slotAppts = byHour[h] ?? [];
+    hourSlots.push({
+      hour: h,
+      count: slotAppts.reduce((sum, a) => sum + a.numberOfPeople, 0),
+      appointments: slotAppts,
+    });
   }
 
   return (
@@ -67,7 +80,7 @@ export default async function DashboardPage({
                 <Calendar className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{nonCancelled.length}</p>
+                <p className="text-2xl font-bold">{nonCancelledCount}</p>
                 <p className="text-xs text-muted-foreground">Total</p>
               </div>
             </CardContent>
@@ -114,39 +127,63 @@ export default async function DashboardPage({
               {branch.name} &mdash; Max {maxPerHour}/hour
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-4 space-y-2">
+          <CardContent className="px-4 pb-4 space-y-3">
             {hourSlots.map((slot) => {
               const pct = maxPerHour > 0 ? (slot.count / maxPerHour) * 100 : 0;
               const isFull = slot.count >= maxPerHour;
               return (
-                <div key={slot.hour} className="flex items-center gap-3">
-                  <span className="text-xs font-mono text-muted-foreground w-16 shrink-0">
-                    {formatHour(slot.hour)}
-                  </span>
-                  <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden relative">
-                    <div
-                      className={`h-full rounded-full transition-all ${
-                        isFull
-                          ? "bg-red-400"
-                          : pct >= 70
-                            ? "bg-amber-400"
-                            : pct > 0
-                              ? "bg-emerald-400"
-                              : ""
-                      }`}
-                      style={{ width: `${Math.min(pct, 100)}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <span className="text-xs font-medium tabular-nums">
-                      {slot.count}/{maxPerHour}
+                <div key={slot.hour} className="space-y-1">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-mono text-muted-foreground w-16 shrink-0">
+                      {formatHour(slot.hour)}
                     </span>
-                    {isFull && (
-                      <Badge variant="destructive" className="text-[10px] h-5 px-1.5">
-                        FULL
-                      </Badge>
-                    )}
+                    <div className="flex-1 h-5 bg-muted rounded-full overflow-hidden relative">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          isFull
+                            ? "bg-red-400"
+                            : pct >= 70
+                              ? "bg-amber-400"
+                              : pct > 0
+                                ? "bg-emerald-400"
+                                : ""
+                        }`}
+                        style={{ width: `${Math.min(pct, 100)}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-xs font-medium tabular-nums">
+                        {slot.count}/{maxPerHour}
+                      </span>
+                      {isFull && (
+                        <Badge variant="destructive" className="text-[10px] h-5 px-1.5">
+                          FULL
+                        </Badge>
+                      )}
+                    </div>
                   </div>
+                  {slot.appointments.length > 0 && (
+                    <div className="ml-[76px] space-y-0.5">
+                      {slot.appointments.map((apt) => (
+                        <div key={apt.id} className="flex items-center gap-1.5 text-[11px]">
+                          <span className="font-mono text-muted-foreground shrink-0">
+                            {formatTime(apt.hour, apt.minute)}
+                          </span>
+                          <span className="truncate">
+                            {apt.customerName || apt.phoneNumber}
+                          </span>
+                          {apt.numberOfPeople > 1 && (
+                            <span className="text-muted-foreground shrink-0">
+                              ×{apt.numberOfPeople}
+                            </span>
+                          )}
+                          <Badge className={`text-[9px] h-3.5 px-1 ml-auto shrink-0 ${getStatusColor(apt.status)}`}>
+                            {getStatusLabel(apt.status)}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}

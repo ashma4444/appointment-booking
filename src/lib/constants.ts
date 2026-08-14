@@ -12,13 +12,20 @@ export const SERVICE_CATEGORIES = [
   { value: "other", label: "Other" },
 ] as const;
 
-export const DEFAULT_MAX_PER_HOUR = 3;
+export const DEFAULT_MAX_PER_HOUR = 5;
 
 export function formatHour(hour: number): string {
   if (hour === 0) return "12:00 AM";
   if (hour < 12) return `${hour}:00 AM`;
   if (hour === 12) return "12:00 PM";
   return `${hour - 12}:00 PM`;
+}
+
+export function formatTime(hour: number, minute: number = 0): string {
+  const period = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  const displayMinute = String(minute).padStart(2, "0");
+  return `${displayHour}:${displayMinute} ${period}`;
 }
 
 export function getStatusColor(status: string) {

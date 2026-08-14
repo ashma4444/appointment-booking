@@ -4,6 +4,8 @@ export const appointmentSchema = z.object({
   branchId: z.string().min(1, "Branch is required"),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
   hour: z.number().int().min(0).max(23),
+  minute: z.number().int().min(0).max(59).default(0),
+  numberOfPeople: z.number().int().min(1).max(50).default(1),
   customerName: z.string().optional(),
   phoneNumber: z.string().min(7, "Phone number must be at least 7 digits"),
   serviceId: z.string().min(1, "Service is required"),

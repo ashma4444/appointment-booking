@@ -26,7 +26,7 @@ model DailyCapacity {
   id         String   @id @default(cuid())
   branchId   String
   date       String
-  maxPerHour Int      @default(3)
+  maxPerHour Int      @default(5)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -54,6 +54,8 @@ model Appointment {
   branchId     String
   date         String
   hour         Int
+  minute       Int      @default(0)
+  numberOfPeople Int    @default(1)
   customerName String?
   phoneNumber  String
   serviceId    String
@@ -70,4 +72,5 @@ model Appointment {
   @@index([branchId, date, hour])
   @@index([phoneNumber])
   @@index([status])
+  @@index([status, date])
 }

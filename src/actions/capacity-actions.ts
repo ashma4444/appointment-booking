@@ -19,9 +19,7 @@ export async function setDailyCapacity(formData: unknown): Promise<ActionResult>
       update: { maxPerHour },
       create: { branchId, date, maxPerHour },
     });
-    revalidatePath("/appointments");
-    revalidatePath("/settings");
-    revalidatePath("/dashboard");
+    revalidatePath("/", "layout");
     return { success: true };
   } catch {
     return { success: false, error: "Failed to set capacity" };

@@ -6,8 +6,8 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { format, parseISO } from "date-fns";
 import { getStatusColor, getStatusLabel } from "@/lib/constants";
+import { formatNepaliDateShort } from "@/lib/nepali-date";
 import type { AppointmentWithRelations } from "@/types";
 
 interface CustomerSearchProps {
@@ -76,7 +76,7 @@ export function CustomerSearch({ query, appointments }: CustomerSearchProps) {
                     className="flex items-center gap-2 text-xs border-l-2 border-muted pl-3 py-1"
                   >
                     <span className="text-muted-foreground shrink-0">
-                      {format(parseISO(apt.date), "MMM d")}
+                      {formatNepaliDateShort(apt.date)}
                     </span>
                     <span className="text-muted-foreground">&mdash;</span>
                     <span>{apt.branch.name}</span>

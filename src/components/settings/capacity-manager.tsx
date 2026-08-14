@@ -1,48 +1,46 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { format, parseISO } from "date-fns";
+import { useState, useTransition, lazy, Suspense } from "react";
 import { CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+
+const NepaliCalendar = lazy(() =>
+  import("@/components/ui/nepali-calendar").then((m) => ({ default: m.NepaliCalendar }))
+);
 import { setDailyCapacity } from "@/actions/capacity-actions";
 import { formatHour } from "@/lib/constants";
+import { formatNepaliDateFull, getTodayAD } from "@/lib/nepali-date";
 import { toast } from "sonner";
 import type { Branch } from "@/generated/prisma/client";
 
 export function CapacityManager({ branches }: { branches: Branch[] }) {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-
-  const today = format(new Date(), "yyyy-MM-dd");
+  const today = getTodayAD();
   const [selectedBranch, setSelectedBranch] = useState(branches[0]?.id ?? "");
   const [selectedDate, setSelectedDate] = useState(today);
   const [maxPerHour, setMaxPerHour] = useState("5");
-  const [loading, setLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [calOpen, setCalOpen] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
 
-    const result = await setDailyCapacity({
-      branchId: selectedBranch,
-      date: selectedDate,
-      maxPerHour: Number(maxPerHour),
+    startTransition(async () => {
+      const result = await setDailyCapacity({
+        branchId: selectedBranch,
+        date: selectedDate,
+        maxPerHour: Number(maxPerHour),
+      });
+
+      if (result.success) {
+        toast.success(`Capacity set to ${maxPerHour} per hour for ${formatNepaliDateFull(selectedDate)}`);
+      } else {
+        toast.error(result.error);
+      }
     });
-
-    setLoading(false);
-
-    if (result.success) {
-      toast.success(`Capacity set to ${maxPerHour} per hour for ${format(parseISO(selectedDate), "MMM d, yyyy")}`);
-    } else {
-      toast.error(result.error);
-    }
   }
 
   return (
@@ -83,26 +81,25 @@ export function CapacityManager({ branches }: { branches: Branch[] }) {
               <Popover open={calOpen} onOpenChange={setCalOpen}>
                 <PopoverTrigger className="inline-flex w-full items-center justify-start gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm font-normal transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50">
                   <CalendarDays className="h-4 w-4" />
-                  {format(parseISO(selectedDate), "EEEE, MMMM d, yyyy")}
+                  {formatNepaliDateFull(selectedDate)}
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={parseISO(selectedDate)}
-                    onSelect={(date) => {
-                      if (date) {
-                        setSelectedDate(format(date, "yyyy-MM-dd"));
+                  <Suspense fallback={<div className="w-[280px] h-[320px] animate-pulse bg-muted rounded-lg" />}>
+                    <NepaliCalendar
+                      selected={selectedDate}
+                      onSelect={(adDate) => {
+                        setSelectedDate(adDate);
                         setCalOpen(false);
-                      }
-                    }}
-                  />
+                      }}
+                    />
+                  </Suspense>
                 </PopoverContent>
               </Popover>
             </div>
 
             {/* Max per hour */}
             <div className="space-y-2">
-              <Label>Maximum appointments per hour</Label>
+              <Label>Maximum people per hour</Label>
               <Input
                 type="number"
                 min="1"
@@ -112,12 +109,12 @@ export function CapacityManager({ branches }: { branches: Branch[] }) {
                 className="text-center text-lg font-semibold"
               />
               <p className="text-xs text-muted-foreground">
-                Every hour from opening to closing will allow up to {maxPerHour} appointments.
+                Every hour from opening to closing will allow up to {maxPerHour} people.
               </p>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Saving..." : "Set Capacity"}
+            <Button type="submit" className="w-full" disabled={isPending}>
+              {isPending ? "Saving..." : "Set Capacity"}
             </Button>
           </form>
         </CardContent>

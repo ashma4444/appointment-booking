@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import {
   Sheet,
   SheetContent,
@@ -31,7 +31,7 @@ interface ServiceDialogProps {
 export function ServiceDialog({ open, onOpenChange, editService }: ServiceDialogProps) {
   const isEdit = !!editService;
 
-  const [loading, setLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [name, setName] = useState(editService?.name ?? "");
   const [category, setCategory] = useState(editService?.category ?? "nails");
   const [price, setPrice] = useState(String(editService?.price ?? ""));
@@ -45,9 +45,8 @@ export function ServiceDialog({ open, onOpenChange, editService }: ServiceDialog
     setDuration(String(editService.duration));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
 
     const data = {
       name: name.trim(),
@@ -57,21 +56,21 @@ export function ServiceDialog({ open, onOpenChange, editService }: ServiceDialog
       isActive: true,
     };
 
-    const result = isEdit
-      ? await updateService(editService.id, data)
-      : await createService(data);
+    startTransition(async () => {
+      const result = isEdit
+        ? await updateService(editService.id, data)
+        : await createService(data);
 
-    setLoading(false);
-
-    if (result.success) {
-      toast.success(isEdit ? "Service updated" : "Service created");
-      onOpenChange(false);
-      setName("");
-      setPrice("");
-      setDuration("");
-    } else {
-      toast.error(result.error);
-    }
+      if (result.success) {
+        toast.success(isEdit ? "Service updated" : "Service created");
+        onOpenChange(false);
+        setName("");
+        setPrice("");
+        setDuration("");
+      } else {
+        toast.error(result.error);
+      }
+    });
   }
 
   return (
@@ -132,8 +131,8 @@ export function ServiceDialog({ open, onOpenChange, editService }: ServiceDialog
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading || !name.trim()}>
-            {loading ? "Saving..." : isEdit ? "Update Service" : "Add Service"}
+          <Button type="submit" className="w-full" disabled={isPending || !name.trim()}>
+            {isPending ? "Saving..." : isEdit ? "Update Service" : "Add Service"}
           </Button>
         </form>
       </SheetContent>

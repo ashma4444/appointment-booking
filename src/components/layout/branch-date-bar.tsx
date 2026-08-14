@@ -5,8 +5,12 @@ import { format, addDays, subDays, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { useState } from "react";
+import { formatNepaliDateShort } from "@/lib/nepali-date";
+import { useState, lazy, Suspense } from "react";
+
+const NepaliCalendar = lazy(() =>
+  import("@/components/ui/nepali-calendar").then((m) => ({ default: m.NepaliCalendar }))
+);
 import type { Branch } from "@/generated/prisma/client";
 
 export function BranchDateBar({ branches }: { branches: Branch[] }) {
@@ -34,7 +38,7 @@ export function BranchDateBar({ branches }: { branches: Branch[] }) {
   const goToday = () => goDate(today);
 
   const isToday = selectedDate === today;
-  const displayDate = format(parseISO(selectedDate), "EEE, MMM d");
+  const displayDate = formatNepaliDateShort(selectedDate);
 
   return (
     <div className="sticky top-14 z-30 border-b bg-background px-4 py-2 space-y-2">
@@ -71,16 +75,15 @@ export function BranchDateBar({ branches }: { branches: Branch[] }) {
               {isToday ? "Today" : displayDate}
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="center">
-              <Calendar
-                mode="single"
-                selected={parseISO(selectedDate)}
-                onSelect={(date) => {
-                  if (date) {
-                    goDate(format(date, "yyyy-MM-dd"));
+              <Suspense fallback={<div className="w-[280px] h-[320px] animate-pulse bg-muted rounded-lg" />}>
+                <NepaliCalendar
+                  selected={selectedDate}
+                  onSelect={(adDate) => {
+                    goDate(adDate);
                     setCalOpen(false);
-                  }
-                }}
-              />
+                  }}
+                />
+              </Suspense>
             </PopoverContent>
           </Popover>
         </div>

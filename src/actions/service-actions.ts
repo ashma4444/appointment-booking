@@ -45,12 +45,3 @@ export async function deleteService(id: string): Promise<ActionResult> {
   }
 }
 
-export async function toggleServiceActive(id: string, isActive: boolean): Promise<ActionResult> {
-  try {
-    await prisma.service.update({ where: { id }, data: { isActive } });
-    revalidatePath("/services");
-    return { success: true };
-  } catch {
-    return { success: false, error: "Failed to toggle service" };
-  }
-}

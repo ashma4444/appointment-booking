@@ -54,3 +54,6 @@ prisma/dev.db
 .claude/
 .windsurf/
 skills-lock.json
+
+.vercel
+.env*

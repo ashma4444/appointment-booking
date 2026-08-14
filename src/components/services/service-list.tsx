@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Pencil, ToggleLeft, ToggleRight } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ServiceDialog } from "./service-dialog";
-import { toggleServiceActive } from "@/actions/service-actions";
+import { deleteService } from "@/actions/service-actions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Service } from "@/generated/prisma/client";
@@ -14,6 +13,7 @@ import type { Service } from "@/generated/prisma/client";
 export function ServiceList({ services }: { services: Service[] }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editService, setEditService] = useState<Service | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   function handleEdit(service: Service) {
     setEditService(service);
@@ -25,13 +25,16 @@ export function ServiceList({ services }: { services: Service[] }) {
     setDialogOpen(true);
   }
 
-  async function handleToggle(id: string, isActive: boolean) {
-    const result = await toggleServiceActive(id, !isActive);
-    if (result.success) {
-      toast.success(isActive ? "Service deactivated" : "Service activated");
-    } else {
-      toast.error(result.error);
-    }
+  function handleDelete(id: string, name: string) {
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    startTransition(async () => {
+      const result = await deleteService(id);
+      if (result.success) {
+        toast.success("Service deleted");
+      } else {
+        toast.error(result.error);
+      }
+    });
   }
 
   const categoryLabels: Record<string, string> = {
@@ -49,7 +52,7 @@ export function ServiceList({ services }: { services: Service[] }) {
   }, {});
 
   return (
-    <div className="space-y-4">
+    <div className={cn("space-y-4", isPending && "opacity-60 pointer-events-none")}>
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold">Services</h2>
         <Button size="sm" className="h-8 gap-1.5 rounded-full" onClick={handleAdd}>
@@ -65,7 +68,7 @@ export function ServiceList({ services }: { services: Service[] }) {
           </h3>
           <div className="space-y-2">
             {items.map((service) => (
-              <Card key={service.id} className={cn(!service.isActive && "opacity-50")}>
+              <Card key={service.id}>
                 <CardContent className="p-3 flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{service.name}</p>
@@ -76,25 +79,8 @@ export function ServiceList({ services }: { services: Service[] }) {
                       <span className="text-xs text-muted-foreground">
                         {service.duration}min
                       </span>
-                      {!service.isActive && (
-                        <Badge variant="secondary" className="text-[10px] h-4">
-                          Inactive
-                        </Badge>
-                      )}
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 shrink-0"
-                    onClick={() => handleToggle(service.id, service.isActive)}
-                  >
-                    {service.isActive ? (
-                      <ToggleRight className="h-4 w-4 text-emerald-600" />
-                    ) : (
-                      <ToggleLeft className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -102,6 +88,14 @@ export function ServiceList({ services }: { services: Service[] }) {
                     onClick={() => handleEdit(service)}
                   >
                     <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 text-destructive"
+                    onClick={() => handleDelete(service.id, service.name)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </CardContent>
               </Card>
