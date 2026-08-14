@@ -69,6 +69,7 @@ const schema = [
   `CREATE INDEX IF NOT EXISTS "Appointment_branchId_date_hour_idx" ON "Appointment"("branchId", "date", "hour")`,
   `CREATE INDEX IF NOT EXISTS "Appointment_phoneNumber_idx" ON "Appointment"("phoneNumber")`,
   `CREATE INDEX IF NOT EXISTS "Appointment_status_idx" ON "Appointment"("status")`,
+  `CREATE INDEX IF NOT EXISTS "Appointment_status_date_idx" ON "Appointment"("status", "date")`,
 ];
 
 async function main() {
