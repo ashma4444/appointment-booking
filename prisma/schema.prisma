@@ -74,3 +74,9 @@ model Appointment {
   @@index([status])
   @@index([status, date])
 }
+
+model AppSettings {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

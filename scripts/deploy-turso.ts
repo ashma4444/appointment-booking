@@ -1,4 +1,5 @@
 import { createClient } from "@libsql/client";
+import { scryptSync, randomBytes } from "crypto";
 
 const url = process.env.TURSO_DATABASE_URL;
 const authToken = process.env.TURSO_AUTH_TOKEN;
@@ -70,6 +71,12 @@ const schema = [
   `CREATE INDEX IF NOT EXISTS "Appointment_phoneNumber_idx" ON "Appointment"("phoneNumber")`,
   `CREATE INDEX IF NOT EXISTS "Appointment_status_idx" ON "Appointment"("status")`,
   `CREATE INDEX IF NOT EXISTS "Appointment_status_date_idx" ON "Appointment"("status", "date")`,
+
+  `CREATE TABLE IF NOT EXISTS "AppSettings" (
+    "key" TEXT NOT NULL PRIMARY KEY,
+    "value" TEXT NOT NULL,
+    "updatedAt" DATETIME NOT NULL
+  )`,
 ];
 
 // Migrations for columns added after initial deployment
@@ -142,6 +149,16 @@ async function main() {
     });
   }
   console.log("  ✓ Services seeded");
+
+  // Seed default PIN (12345)
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync("12345", salt, 64).toString("hex");
+  const pinHash = `${salt}:${hash}`;
+  await client.execute({
+    sql: `INSERT OR IGNORE INTO "AppSettings" ("key", "value", "updatedAt") VALUES (?, ?, ?)`,
+    args: ["pinHash", pinHash, now],
+  });
+  console.log("  ✓ Default PIN seeded");
 
   console.log("\nDone! Turso database is ready.");
 }
