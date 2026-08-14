@@ -72,6 +72,12 @@ const schema = [
   `CREATE INDEX IF NOT EXISTS "Appointment_status_date_idx" ON "Appointment"("status", "date")`,
 ];
 
+// Migrations for columns added after initial deployment
+const migrations = [
+  `ALTER TABLE "Appointment" ADD COLUMN "minute" INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE "Appointment" ADD COLUMN "numberOfPeople" INTEGER NOT NULL DEFAULT 1`,
+];
+
 async function main() {
   console.log("Pushing schema to Turso...");
 
@@ -82,6 +88,23 @@ async function main() {
       console.log(`  ✓ ${tableName}`);
     } catch (e) {
       console.error(`  ✗ Failed:`, (e as Error).message);
+    }
+  }
+
+  console.log("\nRunning migrations...");
+  for (const sql of migrations) {
+    try {
+      await client.execute(sql);
+      const col = sql.match(/ADD COLUMN "(\w+)"/)?.[1] || "unknown";
+      console.log(`  ✓ Added column: ${col}`);
+    } catch (e) {
+      const msg = (e as Error).message;
+      if (msg.includes("duplicate")) {
+        const col = sql.match(/ADD COLUMN "(\w+)"/)?.[1] || "unknown";
+        console.log(`  ~ Already exists: ${col}`);
+      } else {
+        console.error(`  ✗ Failed:`, msg);
+      }
     }
   }
 
